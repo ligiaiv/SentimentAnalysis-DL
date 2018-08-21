@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from pprint import pprint
 from stopwords import STOPWORDS
 import nltk
@@ -8,8 +9,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.layers import Dense, Input, GlobalMaxPooling1D
-from keras.layers import Conv1D, MaxPooling1D,Embedding
+from keras.layers import Dense, Input, Embedding
+from keras.layers import LSTM, Bidirectional,GlobalMaxPool1D, Dropout
+from keras.optimizers import Adam
 from keras.models import Model
 from sklearn.metrics import roc_auc_score
 #pessoas não sabem acentuar palavras: remover acentos
@@ -20,7 +22,7 @@ stemmer = nltk.stem.RSLPStemmer()
 dbFile = "BigFiles/ReLi-Amado.txt"
 EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
-
+possible_labels = ["+","O","-"]
 def loadWE():
 	print('Loading word vectors...')
 	word2vec = {}
@@ -55,7 +57,21 @@ def read_file(dbFile):
 			# analyse_critica(critica)
 			# critica = ""
 			if len(frase)>0:
+				# print(value)
 				frase_list.append(frase)
+				if value is '+':
+					array = [1,0,0]
+				elif value is 'O':
+					array = [0,1,0]
+				elif value is '-':
+					array = [0,0,1]
+				else:
+					print("problemas com targets: ",value)
+					array = [0,0,0]
+				targets.append(array)
+				# print(targets)
+				# print(array)
+				
 				frase = []
 			continue
 
@@ -68,10 +84,9 @@ def read_file(dbFile):
 		# word = stemmer.stem(word)
 		frase.append(word)
 		value = parts[4]
-	return frase_list,targets
+	return frase_list,np.array(targets)
 sentences,targets = read_file(dbFile)
 word2vec= loadWE()
-
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
 tokenizer.fit_on_texts(sentences) #gives each word a number
 sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
@@ -93,10 +108,12 @@ BATCH_SIZE = 128
 EPOCHS = 100
 
 word2idx = tokenizer.word_index
+pprint(word2idx)
 print('Found %s unique tokens.' % len(word2idx))
-
 data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
 print('Shape of data tensor: ',data.shape)
+# quit()
+
 
 #prepare embedding matrix
 
@@ -114,11 +131,11 @@ for word,i in word2idx.items():
 # trainable = False so the embeddings are fixed
 
 embedding_layer=Embedding(
-	num_words,
-	EMBEDDING_DIM,
-	weights = [embedding_matrix],
-	input_length = MAX_SEQUENCE_LENGTH,
-	trainable = False
+    num_words,
+    EMBEDDING_DIM,
+    weights = [embedding_matrix],
+    input_length = MAX_SEQUENCE_LENGTH,
+    trainable = False
 )
 
 print('Building model ...')
@@ -126,21 +143,17 @@ print('Building model ...')
 # train a 1D convnet with global maxpooling
 input_ = Input(shape = (MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
-x = Conv1D(128,3,activation = 'relu')(x)
-x = MaxPooling1D(3)(x)
-x = Conv1D(128,3,activation = 'relu')(x)
-x = MaxPooling1D(3)(x)
-x = Conv1D(128,3,activation = 'relu')(x)
-x = GlobalMaxPooling1D()(x)
-x = Dense(128,activation = 'relu')(x)
-output = Dense(1,activation = 'sigmoid')(x)
+x = LSTM(15,return_sequences = True)(x)
+x = GlobalMaxPool1D()(x)
+output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 
 model = Model(input_,output)
 model.compile(
     loss ='binary_crossentropy',
-    optimizer = 'rmsprop',
+    optimizer = Adam(lr = 0.01),
     metrics = ['accuracy']
-    )
+)
+
 print('training model...')
 r = model.fit(
     data,
@@ -160,3 +173,6 @@ for j in range(6):
     auc = roc_auc_score(targets[:,j],p[:,j])
     aucs.append(auc)
 print(np.mean(aucs))
+
+
+
