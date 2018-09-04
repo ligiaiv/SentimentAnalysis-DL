@@ -18,3 +18,15 @@ Gráfico:  Figura_1.png
 Resultados:
 244/244 [==============================] - 0s 581us/step - loss: 0.0435 - acc: 0.9891 - val_loss: 0.7827 - val_acc: 0.7322
 Gráfico: Figura_2.png
+
+-Feitos os mesmos experimentos porém com todo o DataSet
+--LSTM:
+		1848/1848 [==============================] - 1s 596us/step - loss: 0.0376 - acc: 0.9908 - val_loss: 1.0862 - val_acc: 0.7439
+		Gráfico: Figura_3.png
+
+--BiLSTM:
+		1848/1848 [==============================] - 2s 1ms/step - loss: 0.2138 - acc: 0.9197 - val_loss: 0.7173 - val_acc: 0.7561
+		Gráfico: Figura_4.png
+
+		OBS: No final o val_acc apresentou uma queda brusca
+			Achar uma maneira de parar o processo antes

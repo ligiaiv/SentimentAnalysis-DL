@@ -19,7 +19,7 @@ CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
 # chars_to_detect = ['.','!','?',]
 stemmer = nltk.stem.RSLPStemmer()
 
-dbFile = "BigFiles/ReLi-Amado.txt"
+dbFile = "BigFiles/ReLi-Completo.txt"
 EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
 possible_labels = ["+","O","-"]
@@ -43,7 +43,8 @@ def loadWE():
 	
 
 def read_file(dbFile):
-
+	print('Reading Dataset...')
+	i=0
 	f_in = open(dbFile,'r')
 	frase = []
 	targets = []
@@ -51,9 +52,12 @@ def read_file(dbFile):
 	value = ""
 	next(f_in)
 	for line in f_in:
-		if not len(line)>1:
+		#i+=1
+		#print(i," ",line)
+
+		if not len(line.replace(' ',''))>1:
 			continue 
-		if line[0] is '#':
+		if line[0] is '#' or line[0] is '[':
 			# analyse_critica(critica)
 			# critica = ""
 			if len(frase)>0:
@@ -86,6 +90,7 @@ def read_file(dbFile):
 		value = parts[4]
 	return frase_list,np.array(targets)
 sentences,targets = read_file(dbFile)
+print(len(sentences), " sentences were found")
 word2vec= loadWE()
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
 tokenizer.fit_on_texts(sentences) #gives each word a number
@@ -143,7 +148,7 @@ print('Building model ...')
 # train a 1D convnet with global maxpooling
 input_ = Input(shape = (MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
-x = LSTM(15,return_sequences = True)(x)
+x = Bidirectional(LSTM(15,return_sequences = True))(x)
 x = GlobalMaxPool1D()(x)
 output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 
