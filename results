@@ -1,0 +1,20 @@
+﻿04/09/2018 - 08:57
+-Testado apenas a DB de Jorge Amado, utilizando uma LSTM Bidirecional
+Glove s100
+EMBEDDING_DIM = 100
+MAX_VOCAB_SIZE = 30000
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 100
+
+Resultados:
+244/244 [==============================] - 0s 987us/step - loss: 0.0079 - acc: 1.0000 - val_loss: 0.6153 - val_acc: 0.7978
+Gráfico:  Figura_1.png
+
+-Feito exatamente o mesmo teste, porém com LSTM normal
+
+Resultados:
+244/244 [==============================] - 0s 581us/step - loss: 0.0435 - acc: 0.9891 - val_loss: 0.7827 - val_acc: 0.7322
+Gráfico: Figura_2.png
