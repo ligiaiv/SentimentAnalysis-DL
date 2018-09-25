@@ -30,3 +30,46 @@ Gráfico: Figura_2.png
 
 		OBS: No final o val_acc apresentou uma queda brusca
 			Achar uma maneira de parar o processo antes
+
+﻿04/09/2018 - 08:57
+Testando com todo o Dataset com Embedding de dim=300
+x = Bidirectional(LSTM(15,return_sequences = True))(x)
+
+EMBEDDING_DIM = 300
+MAX_VOCAB_SIZE = 30000
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 100
+
+1848/1848 [==============================] - 4s 2ms/step - loss: 0.0145 - acc: 0.9935 - val_loss: 0.8579 - val_acc: 0.7929
+
+após aproximadamente 5 épocas acurácia atingiu o seu máximo, de aproximadamente 81%
+
+-Feito mesmo teste, porém com 10 épocas
+
+Gráfico: Figura-Corvo-1.png
+1848/1848 [==============================] - 4s 2ms/step - loss: 0.1754 - acc: 0.9497 - val_loss: 0.4608 - val_acc: 0.7893
+
+-Exatamente o mesmo teste, porém calculando a acurácia sobre todo o conjunto:
+
+1848/1848 [==============================] - 4s 2ms/step - loss: 0.1669 - acc: 0.9455 - val_loss: 0.4564 - val_acc: 0.8160
+0.9613426736577582
+
+-Mesmo experimento, porém com 30 camadas
+
+dbFile = "BigFiles/ReLi-Completo.txt"
+EMBEDDING_DIM = 300
+MAX_VOCAB_SIZE = 30000
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 10
+
+1848/1848 [==============================] - 3s 2ms/step - loss: 0.0844 - acc: 0.9794 - val_loss: 0.4966 - val_acc: 0.8175
+0.9780074229455193
+
+Gráfico: Figura-Corvo-2.png
+

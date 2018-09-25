@@ -20,7 +20,7 @@ CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 100
+EMBEDDING_DIM = 300
 MAX_VOCAB_SIZE = 30000
 possible_labels = ["+","O","-"]
 def loadWE():
@@ -100,17 +100,16 @@ sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its
 ##																				##
 ##																				##
 ##	Ctrl-c Ctrl-v cnn_toxic.py para testar se está funcionando + ou menos		##
+##	Modificado para usar próprias redes											##
 ##																				##
 ##																				##
 ##################################################################################
 
 
 MAX_SEQUENCE_LENGTH = 100
-# MAX_VOCAB_SIZE = 20000
-# EMBEDDING_DIM = 100
 VALIDATION_SPLIT = 0.2
 BATCH_SIZE = 128
-EPOCHS = 100
+EPOCHS = 10
 
 word2idx = tokenizer.word_index
 pprint(word2idx)
@@ -148,7 +147,7 @@ print('Building model ...')
 # train a 1D convnet with global maxpooling
 input_ = Input(shape = (MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
-x = Bidirectional(LSTM(15,return_sequences = True))(x)
+x = Bidirectional(LSTM(30,return_sequences = True))(x)
 x = GlobalMaxPool1D()(x)
 output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 
@@ -174,7 +173,7 @@ plt.show()
 
 p = model.predict(data)
 aucs = []
-for j in range(6):
+for j in range(3):
     auc = roc_auc_score(targets[:,j],p[:,j])
     aucs.append(auc)
 print(np.mean(aucs))
