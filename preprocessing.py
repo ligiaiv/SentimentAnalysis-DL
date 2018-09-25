@@ -20,9 +20,16 @@ CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 300
+EMBEDDING_DIM = 600
 MAX_VOCAB_SIZE = 30000
+M = 30 #nº de camadas
 possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 15
+
+
 def loadWE():
 	print('Loading word vectors...')
 	word2vec = {}
@@ -106,13 +113,9 @@ sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its
 ##################################################################################
 
 
-MAX_SEQUENCE_LENGTH = 100
-VALIDATION_SPLIT = 0.2
-BATCH_SIZE = 128
-EPOCHS = 10
 
 word2idx = tokenizer.word_index
-pprint(word2idx)
+#pprint(word2idx)
 print('Found %s unique tokens.' % len(word2idx))
 data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
 print('Shape of data tensor: ',data.shape)
@@ -147,7 +150,7 @@ print('Building model ...')
 # train a 1D convnet with global maxpooling
 input_ = Input(shape = (MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
-x = Bidirectional(LSTM(30,return_sequences = True))(x)
+x = Bidirectional(LSTM(M,return_sequences = True))(x)
 x = GlobalMaxPool1D()(x)
 output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 

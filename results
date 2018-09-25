@@ -73,3 +73,56 @@ EPOCHS = 10
 
 Gráfico: Figura-Corvo-2.png
 
+-Mesmo teste porém com ebedding de 600 e 15 camadas
+
+
+dbFile = "BigFiles/ReLi-Completo.txt"
+EMBEDDING_DIM = 600
+MAX_VOCAB_SIZE = 30000
+M = 15 #nº de camadas
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 10
+
+Gráfico: Figura-Corvo-3.png
+
+1848/1848 [==============================] - 4s 2ms/step - loss: 0.1005 - acc: 0.9760 - val_loss: 0.4736 - val_acc: 0.8117
+0.9750138398526911
+
+Pelo gráfico acho que se colocasse mais épocas poderia melhorar.
+
+-Outro Teste
+
+
+dbFile = "BigFiles/ReLi-Completo.txt"
+EMBEDDING_DIM = 600
+MAX_VOCAB_SIZE = 30000
+M = 15 #nº de camadas
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 40
+
+1848/1848 [==============================] - 4s 2ms/step - loss: 0.0194 - acc: 0.9933 - val_loss: 0.7763 - val_acc: 0.8016
+0.9745824863877944
+
+Gráfico: Figura-Corvo-4.png
+
+-Teste com mais camadas e 15 épocas
+
+07 - acc: 0.9921 - val_loss: 0.6864 - val_acc: 0.8001
+0.9824737258709871
+
+dbFile = "BigFiles/ReLi-Completo.txt"
+EMBEDDING_DIM = 600
+MAX_VOCAB_SIZE = 30000
+M = 130 #nº de camadas
+possible_labels = ["+","O","-"]
+MAX_SEQUENCE_LENGTH = 100
+VALIDATION_SPLIT = 0.2
+BATCH_SIZE = 128
+EPOCHS = 15
+Gráfico: Figura-Corvo-5.png
