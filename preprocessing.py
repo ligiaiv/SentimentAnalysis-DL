@@ -20,15 +20,29 @@ CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 600
+EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
 M = 30 #nº de camadas
 possible_labels = ["+","O","-"]
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
+TRAIN_TEST_SPLIT = 0.3
 BATCH_SIZE = 128
 EPOCHS = 15
 
+def rand_shuffle(data,targets):
+	# print(target.shape)
+	joint = np.concatenate([data,targets],axis = 1)
+	np.random.shuffle(joint)
+	# print(joint)
+	n_data = joint[:,:-3]
+	n_targets = joint[:,-3:]
+	# print("n_data: \n",n_data)
+	# print("n_target: \n",n_target)
+	# # oi = np.array([data,target],axis = 1)
+
+	# print(type(n_data))
+	return n_data,n_targets
 
 def loadWE():
 	print('Loading word vectors...')
@@ -96,12 +110,15 @@ def read_file(dbFile):
 		frase.append(word)
 		value = parts[4]
 	return frase_list,np.array(targets)
+
+
 sentences,targets = read_file(dbFile)
 print(len(sentences), " sentences were found")
 word2vec= loadWE()
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
 tokenizer.fit_on_texts(sentences) #gives each word a number
 sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
+
 
 ##################################################################################
 ##																				##
@@ -119,7 +136,6 @@ word2idx = tokenizer.word_index
 print('Found %s unique tokens.' % len(word2idx))
 data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
 print('Shape of data tensor: ',data.shape)
-# quit()
 
 
 #prepare embedding matrix
@@ -161,25 +177,40 @@ model.compile(
     metrics = ['accuracy']
 )
 
-print('training model...')
-r = model.fit(
-    data,
-    targets,
-    batch_size = BATCH_SIZE,
-    epochs = EPOCHS,
-    validation_split = VALIDATION_SPLIT
-    )
-plt.plot(r.history['loss'],label = 'loss')
-plt.plot(r.history['val_acc'],label = 'val_acc')
-plt.legend()
-plt.show()
+def auc_avg(data,targets):
+	data,targets =rand_shuffle(data,targets) 
 
-p = model.predict(data)
-aucs = []
-for j in range(3):
-    auc = roc_auc_score(targets[:,j],p[:,j])
-    aucs.append(auc)
-print(np.mean(aucs))
+	data_size = data.shape[0]
+	train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
+	print("train :",train_split)
+	test_split = data_size-train_split
+
+
+	print('training model...')
+	r = model.fit(
+	    data[:train_split],
+	    targets[:train_split],
+	    batch_size = BATCH_SIZE,
+	    epochs = EPOCHS,
+	    validation_split = VALIDATION_SPLIT
+	    )
+	print("testing model...")
+
+	p = model.predict(data[train_split:])
+	auc_n = ((targets[train_split:] == p).sum())/test_split
+	print('auc = ',auc_n )
+
+auc_avg(data,targets)
+# plt.plot(r.history['loss'],label = 'loss')
+# plt.plot(r.history['val_acc'],label = 'val_acc')
+# plt.legend()
+# plt.show()
+
+# aucs = []
+# for j in range(3):
+#     auc = roc_auc_score(targets[:,j],p[:,j])
+#     aucs.append(auc)
+# print(np.mean(aucs))
 
 
 
