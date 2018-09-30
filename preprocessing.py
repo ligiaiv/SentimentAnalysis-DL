@@ -197,7 +197,14 @@ def auc_avg(data,targets):
 	print("testing model...")
 
 	p = model.predict(data[train_split:])
-	auc_n = ((targets[train_split:] == p).sum())/test_split
+	p_bool=p.max(axis=1,keepdims=1) == p
+	# p_bool = np.array(np.max(p,axis =1),shape=(1,))
+	# print(targets[train_split:])
+	# print(p)
+	# print(np.max(p,axis = 1))
+	print(p_bool)
+	print((targets[train_split:] == np.round(p).astype(np.int32)))
+	auc_n = ((targets[train_split:] == np.round(p)).sum())/test_split
 	print('auc = ',auc_n )
 
 auc_avg(data,targets)
