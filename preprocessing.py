@@ -16,19 +16,20 @@ from keras.models import Model
 from sklearn.metrics import roc_auc_score
 #pessoas não sabem acentuar palavras: remover acentos
 CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
+BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(',')','u_u','o_o','c/']
 # chars_to_detect = ['.','!','?',]
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 100
+EMBEDDING_DIM = 300
 MAX_VOCAB_SIZE = 30000
-M = 30 #nº de camadas
+M = 25 #nº de camadas
 possible_labels = ["+","O","-"]
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.3
 BATCH_SIZE = 128
-EPOCHS = 15
+EPOCHS = 40
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
@@ -104,7 +105,7 @@ def read_file(dbFile):
 		word = parts[0].lower().replace('.','')
 
 
-		if word in STOPWORDS or word in CHARS_TO_REMOVE:
+		if word in STOPWORDS or word in CHARS_TO_REMOVE or bool(re.search(r'\d', word)) or any(substring in word for substring in BAD_STRINGS):#remove stopwords, ponctuation, numbers and bad strings
 			continue 
 		# word = stemmer.stem(word)
 		frase.append(word)
@@ -141,6 +142,8 @@ print('Shape of data tensor: ',data.shape)
 #prepare embedding matrix
 
 print('Filling pre-trained embeddings...')
+words_not_found = []
+
 num_words = min(MAX_VOCAB_SIZE,len(word2idx)+1)
 embedding_matrix = np.zeros((num_words,EMBEDDING_DIM))
 for word,i in word2idx.items():
@@ -148,6 +151,11 @@ for word,i in word2idx.items():
 		embedding_vector = word2vec.get(word)
 		if embedding_vector is not None:
 			embedding_matrix[i] = embedding_vector
+		else:
+			words_not_found.append(word)
+print("total de palavras: ",len(word2idx),"\tpalavras não encontradasno embedding: ",len(words_not_found))
+with open("BigFiles/words_not_in_emb.txt",'w') as fout:
+	fout.write('\n'.join(words_not_found))
 
 
 # load pre-trained word embedding into an Embedding layer
@@ -198,15 +206,17 @@ def auc_avg(data,targets):
 
 	p = model.predict(data[train_split:])
 	p_bool=p.max(axis=1,keepdims=1) == p
-	# p_bool = np.array(np.max(p,axis =1),shape=(1,))
-	# print(targets[train_split:])
-	# print(p)
-	# print(np.max(p,axis = 1))
-	print(p_bool)
-	print((targets[train_split:] == np.round(p).astype(np.int32)))
-	auc_n = ((targets[train_split:] == np.round(p)).sum())/test_split
+	result = (targets[train_split:] == p_bool).all(axis=1)
+	auc_n = result.sum()/test_split
 	print('auc = ',auc_n )
 
+	plt.plot(r.history['loss'],label = 'loss')
+	plt.plot(r.history['val_acc'],label = 'val_acc')
+	plt.legend()
+	plt.show()
+
+
+	return auc_n
 auc_avg(data,targets)
 # plt.plot(r.history['loss'],label = 'loss')
 # plt.plot(r.history['val_acc'],label = 'val_acc')
