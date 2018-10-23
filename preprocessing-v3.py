@@ -22,9 +22,9 @@ BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 600
+EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
-M = 40 #nº de camadas
+M = 10 #nº de camadas
 possible_labels = ["+","O","-"]
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
@@ -186,29 +186,28 @@ model.compile(
     metrics = ['accuracy']
 )
 
-def auc_avg(data,targets):
-	data,targets =rand_shuffle(data,targets) 
+def train_model(data,targets,train_split):
 
-	data_size = data.shape[0]
-	train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
-	print("train :",train_split)
-	test_split = data_size-train_split
 
 
 	print('training model...')
 	r = model.fit(
-	    data[:train_split],
-	    targets[:train_split],
+	    data,
+	    targets,
 	    batch_size = BATCH_SIZE,
 	    epochs = EPOCHS,
 	    validation_split = VALIDATION_SPLIT
 	    )
+	
+
+
+def test_model(data,targets,train_split):
 	print("testing model...")
 
-	p = model.predict(data[train_split:])
-	print(len(p)," ",len(targets[train_split:]))
+	p = model.predict(data)
+	print(len(p)," ",len(targets))
 	p_bool=p.max(axis=1,keepdims=1) == p
-	result = (targets[train_split:] == p_bool).all(axis=1)
+	result = (targets == p_bool).all(axis=1)
 	print("result:  ",result)
 	auc_n = result.sum()/test_split
 	print('auc_n= ',auc_n )
@@ -228,12 +227,31 @@ def auc_avg(data,targets):
 	print('auc_cruz = ',auc_cruz )
 
 	return auc_n,auc_cruz
+
+
 aucs = []
+data_size = data.shape[0]
+
+
+data,targets =rand_shuffle(data,targets)
+train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
+test_split = data_size-train_split
+print("train :",train_split)
+data_train = data[:train_split]
+targets_train =  targets[:train_split]
+data_test = data[train_split:]
+targets_test = targets[train_split:]
 for i in range(5):
-	result = auc_avg(data,targets)
-	aucs.append(result)
-aucs_n = [i[0] for i in aucs]
-aucs_cruz = [i[1] for i in aucs]
+	data_tr,targets_tr =rand_shuffle(data_train,targets_train)
+
+
+	train_model(data_tr,targets_tr,train_split)
+	
+
+result = test_model(data_test,targets_test,train_split)
+aucs.append(result)
+
+aucs_med = list(map(sum, zip(result)))
 
 now = datetime.datetime.now()
 
@@ -250,11 +268,8 @@ with open("report",'a') as outfile:
 	outfile.write("\nBATCH_SIZE "+str(BATCH_SIZE))
 	outfile.write("\nEPOCHS  "+str(EPOCHS))
 
-	outfile.write("\nauc_n  "+",".join([str(i) for i in aucs_n]))
-	outfile.write("\nauc_cruz  "+",".join([str(i) for i in aucs_cruz]))
-
-	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/5))
-	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5))
+	outfile.write("\nauc_n media  "+str(aucs_med[0]))
+	outfile.write("\nauc_cruz media  "+str(aucs_med[1]))
 # plt.plot(r.history['loss'],label = 'loss')
 # plt.plot(r.history['val_acc'],label = 'val_acc')
 # plt.legend()

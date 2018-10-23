@@ -14,23 +14,23 @@ from keras.layers import LSTM, Bidirectional,GlobalMaxPool1D, Dropout
 from keras.optimizers import Adam
 from keras.models import Model
 from sklearn.metrics import roc_auc_score
-import datetime
 #pessoas não sabem acentuar palavras: remover acentos
 CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
+PONCTUATION = ['.','!','?']
 BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(',')','u_u','o_o','c/']
 # chars_to_detect = ['.','!','?',]
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 600
+EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
-M = 40 #nº de camadas
+M = 25 #nº de camadas
 possible_labels = ["+","O","-"]
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
-EPOCHS = 20
+EPOCHS = 50
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
@@ -80,7 +80,7 @@ def read_file(dbFile):
 
 		if not len(line.replace(' ',''))>1:
 			continue 
-		if line[0] is '#' or line[0] is '[':
+		if line[0] is '#' or line[0] is '[' or line[0] in PONCTUATION:
 			# analyse_critica(critica)
 			# critica = ""
 			if len(frase)>0:
@@ -111,6 +111,7 @@ def read_file(dbFile):
 		# word = stemmer.stem(word)
 		frase.append(word)
 		value = parts[4]
+	print(frase_list)
 	return frase_list,np.array(targets)
 
 
@@ -213,10 +214,10 @@ def auc_avg(data,targets):
 	auc_n = result.sum()/test_split
 	print('auc_n= ',auc_n )
 
-	# plt.plot(r.history['loss'],label = 'loss')
-	# plt.plot(r.history['val_acc'],label = 'val_acc')
-	# plt.legend()
-	# plt.show()
+	plt.plot(r.history['loss'],label = 'loss')
+	plt.plot(r.history['val_acc'],label = 'val_acc')
+	plt.legend()
+	plt.show()
 
 	target_test = targets[train_split:]
 	posneg_position = target_test[:,1] == 0
@@ -227,34 +228,12 @@ def auc_avg(data,targets):
 	auc_cruz = (result*posneg_position).sum()/total_posneg
 	print('auc_cruz = ',auc_cruz )
 
+	with open("result",'w') as outfile:
+		for i in range(len(p)):
+			outfile.write(','.join(p_bool[i].astype(np.str))+",,"+','.join(targets[train_split:][i].astype(np.str))+"\n")
+
 	return auc_n,auc_cruz
-aucs = []
-for i in range(5):
-	result = auc_avg(data,targets)
-	aucs.append(result)
-aucs_n = [i[0] for i in aucs]
-aucs_cruz = [i[1] for i in aucs]
-
-now = datetime.datetime.now()
-
-
-with open("report",'a') as outfile:
-	outfile.write("\n*************"+now.strftime("%Y-%m-%d %H:%M")+"*************")
-	outfile.write("\nEMBEDDING_DIM"+str(EMBEDDING_DIM))
-	outfile.write("\nMAX_VOCAB_SIZE "+str(MAX_VOCAB_SIZE))
-	outfile.write("\nM "+str(M))
-	outfile.write("\npossible_labels "+','.join(possible_labels))
-	outfile.write("\nMAX_SEQUENCE_LENGTH "+str(MAX_SEQUENCE_LENGTH))
-	outfile.write("\nVALIDATION_SPLIT "+str(VALIDATION_SPLIT))
-	outfile.write("\nTRAIN_TEST_SPLIT "+str(TRAIN_TEST_SPLIT))
-	outfile.write("\nBATCH_SIZE "+str(BATCH_SIZE))
-	outfile.write("\nEPOCHS  "+str(EPOCHS))
-
-	outfile.write("\nauc_n  "+",".join([str(i) for i in aucs_n]))
-	outfile.write("\nauc_cruz  "+",".join([str(i) for i in aucs_cruz]))
-
-	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/5))
-	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5))
+auc_avg(data,targets)
 # plt.plot(r.history['loss'],label = 'loss')
 # plt.plot(r.history['val_acc'],label = 'val_acc')
 # plt.legend()
