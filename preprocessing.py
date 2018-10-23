@@ -113,8 +113,63 @@ def read_file(dbFile):
 		value = parts[4]
 	return frase_list,np.array(targets)
 
+def auc_avg(data,targets):
+	data,targets =rand_shuffle(data,targets) 
 
-sentences,targets = read_file(dbFile)
+	data_size = data.shape[0]
+	train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
+	print("train :",train_split)
+	test_split = data_size-train_split
+
+	model.load_weights('model.h5')
+
+
+	print('training model...')
+	r = model.fit(
+	    data[:train_split],
+	    targets[:train_split],
+	    batch_size = BATCH_SIZE,
+	    epochs = EPOCHS,
+	    validation_split = VALIDATION_SPLIT
+	    )
+	print("testing model...")
+
+	p = model.predict(data[train_split:])
+	print(len(p)," ",len(targets[train_split:]))
+	p_bool=p.max(axis=1,keepdims=1) == p
+	result = (targets[train_split:] == p_bool).all(axis=1)
+	print("result:  ",result)
+	auc_n = result.sum()/test_split
+	print('auc_n= ',auc_n )
+
+	# plt.plot(r.history['loss'],label = 'loss')
+	# plt.plot(r.history['val_acc'],label = 'val_acc')
+	# plt.legend()
+	# plt.show()
+
+	target_test = targets[train_split:]
+	posneg_position = target_test[:,1] == 0
+	total_posneg = len(target_test)-target_test[:,1].sum()
+	print(total_posneg)
+	# total_posneg = posneg_position.astype(np.int32).sum()
+
+	auc_cruz = (result*posneg_position).sum()/total_posneg
+	print('auc_cruz = ',auc_cruz )
+
+	return auc_n,auc_cruz
+
+
+
+##################################################################################
+##																				##
+##																				##
+##	Baseado em códigos do udemy													##
+##	Modificado para usar próprias redes											##
+##																				##
+##																				##
+##################################################################################
+
+sentences,targets_0 = read_file(dbFile)
 print(len(sentences), " sentences were found")
 word2vec= loadWE()
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
@@ -122,22 +177,10 @@ tokenizer.fit_on_texts(sentences) #gives each word a number
 sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
 
 
-##################################################################################
-##																				##
-##																				##
-##	Ctrl-c Ctrl-v cnn_toxic.py para testar se está funcionando + ou menos		##
-##	Modificado para usar próprias redes											##
-##																				##
-##																				##
-##################################################################################
-
-
-
 word2idx = tokenizer.word_index
-#pprint(word2idx)
 print('Found %s unique tokens.' % len(word2idx))
-data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
-print('Shape of data tensor: ',data.shape)
+data_0 = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
+print('Shape of data tensor: ',data_0.shape)
 
 
 #prepare embedding matrix
@@ -186,51 +229,11 @@ model.compile(
     metrics = ['accuracy']
 )
 
-def auc_avg(data,targets):
-	data,targets =rand_shuffle(data,targets) 
+model.save_weights('model.h5')
 
-	data_size = data.shape[0]
-	train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
-	print("train :",train_split)
-	test_split = data_size-train_split
-
-
-	print('training model...')
-	r = model.fit(
-	    data[:train_split],
-	    targets[:train_split],
-	    batch_size = BATCH_SIZE,
-	    epochs = EPOCHS,
-	    validation_split = VALIDATION_SPLIT
-	    )
-	print("testing model...")
-
-	p = model.predict(data[train_split:])
-	print(len(p)," ",len(targets[train_split:]))
-	p_bool=p.max(axis=1,keepdims=1) == p
-	result = (targets[train_split:] == p_bool).all(axis=1)
-	print("result:  ",result)
-	auc_n = result.sum()/test_split
-	print('auc_n= ',auc_n )
-
-	# plt.plot(r.history['loss'],label = 'loss')
-	# plt.plot(r.history['val_acc'],label = 'val_acc')
-	# plt.legend()
-	# plt.show()
-
-	target_test = targets[train_split:]
-	posneg_position = target_test[:,1] == 0
-	total_posneg = len(target_test)-target_test[:,1].sum()
-	print(total_posneg)
-	# total_posneg = posneg_position.astype(np.int32).sum()
-
-	auc_cruz = (result*posneg_position).sum()/total_posneg
-	print('auc_cruz = ',auc_cruz )
-
-	return auc_n,auc_cruz
 aucs = []
 for i in range(5):
-	result = auc_avg(data,targets)
+	result = auc_avg(data_0,targets_0)
 	aucs.append(result)
 aucs_n = [i[0] for i in aucs]
 aucs_cruz = [i[1] for i in aucs]
@@ -254,7 +257,7 @@ with open("report",'a') as outfile:
 	outfile.write("\nauc_cruz  "+",".join([str(i) for i in aucs_cruz]))
 
 	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/5))
-	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5))
+	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5)+"\n\n")
 # plt.plot(r.history['loss'],label = 'loss')
 # plt.plot(r.history['val_acc'],label = 'val_acc')
 # plt.legend()
