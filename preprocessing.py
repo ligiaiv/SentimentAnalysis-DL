@@ -30,8 +30,8 @@ MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
-EPOCHS = 20
-
+EPOCHS = 50
+obs = ""
 def rand_shuffle(data,targets):
 	# print(target.shape)
 	joint = np.concatenate([data,targets],axis = 1)
@@ -156,7 +156,7 @@ def auc_avg(data,targets):
 	auc_cruz = (result*posneg_position).sum()/total_posneg
 	print('auc_cruz = ',auc_cruz )
 
-	return auc_n,auc_cruz
+	return auc_n,auc_cruz,r
 
 
 
@@ -231,12 +231,20 @@ model.compile(
 
 model.save_weights('model.h5')
 
-aucs = []
+aucs_n = []
+aucs_cruz = []
 for i in range(5):
-	result = auc_avg(data_0,targets_0)
-	aucs.append(result)
-aucs_n = [i[0] for i in aucs]
-aucs_cruz = [i[1] for i in aucs]
+	acc_n,acc_cr,r = auc_avg(data_0,targets_0)
+	aucs_n.append(acc_n)
+	aucs_cruz.append(acc_cr)
+	if(i == 4):
+		plt.plot(r.history['loss'],label = 'loss')
+		plt.plot(r.history['val_acc'],label = 'val_acc')
+		plt.legend()
+		plt.show()
+	# aucs.append(result)
+# aucs_n = [i[0] for i in aucs]
+# aucs_cruz = [i[1] for i in aucs]
 
 now = datetime.datetime.now()
 
@@ -257,11 +265,12 @@ with open("report",'a') as outfile:
 	outfile.write("\nauc_cruz  "+",".join([str(i) for i in aucs_cruz]))
 
 	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/5))
-	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5)+"\n\n")
-# plt.plot(r.history['loss'],label = 'loss')
-# plt.plot(r.history['val_acc'],label = 'val_acc')
-# plt.legend()
-# plt.show()
+	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/5))
+	outfile.write("\n\n\t------------OBS------------")
+
+	outfile.write("\n"+obs+"\n\n")
+
+
 
 # aucs = []
 # for j in range(3):
