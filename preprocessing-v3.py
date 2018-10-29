@@ -14,6 +14,8 @@ from keras.layers import LSTM, Bidirectional,GlobalMaxPool1D, Dropout
 from keras.optimizers import Adam
 from keras.models import Model
 from sklearn.metrics import roc_auc_score
+from sklearn.model_selection import KFold
+
 import datetime
 #pessoas não sabem acentuar palavras: remover acentos
 CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
@@ -31,6 +33,7 @@ VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
 EPOCHS = 20
+obs = "10 fold cross validation"
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
@@ -185,10 +188,13 @@ model.compile(
     optimizer = Adam(lr = 0.01),
     metrics = ['accuracy']
 )
+model.save_weights('model.h5')
 
-def train_model(data,targets,train_split):
+
+def train_model(data,targets):
 
 
+	model.load_weights('model.h5')
 
 	print('training model...')
 	r = model.fit(
@@ -198,10 +204,10 @@ def train_model(data,targets,train_split):
 	    epochs = EPOCHS,
 	    validation_split = VALIDATION_SPLIT
 	    )
-	
 
 
-def test_model(data,targets,train_split):
+
+def test_model(data,targets):
 	print("testing model...")
 
 	p = model.predict(data)
@@ -209,7 +215,7 @@ def test_model(data,targets,train_split):
 	p_bool=p.max(axis=1,keepdims=1) == p
 	result = (targets == p_bool).all(axis=1)
 	print("result:  ",result)
-	auc_n = result.sum()/test_split
+	auc_n = result.sum()/len(targets)
 	print('auc_n= ',auc_n )
 
 	# plt.plot(r.history['loss'],label = 'loss')
@@ -217,9 +223,8 @@ def test_model(data,targets,train_split):
 	# plt.legend()
 	# plt.show()
 
-	target_test = targets[train_split:]
-	posneg_position = target_test[:,1] == 0
-	total_posneg = len(target_test)-target_test[:,1].sum()
+	posneg_position = targets[:,1] == 0
+	total_posneg = len(targets)-targets[:,1].sum()
 	print(total_posneg)
 	# total_posneg = posneg_position.astype(np.int32).sum()
 
@@ -229,29 +234,25 @@ def test_model(data,targets,train_split):
 	return auc_n,auc_cruz
 
 
-aucs = []
-data_size = data.shape[0]
+aucs_n= []
+aucs_cruz = []
+kf = KFold(n_splits=10)
 
+for train_index, test_index in kf.split(data):
+	print("TRAIN:", train_index, "TEST:", test_index)
+	X_train, X_test = data[train_index], data[test_index]
+	y_train, y_test = targets[train_index], targets[test_index]
 
-data,targets =rand_shuffle(data,targets)
-train_split = int(np.ceil(data_size*TRAIN_TEST_SPLIT))
-test_split = data_size-train_split
-print("train :",train_split)
-data_train = data[:train_split]
-targets_train =  targets[:train_split]
-data_test = data[train_split:]
-targets_test = targets[train_split:]
-for i in range(5):
-	data_tr,targets_tr =rand_shuffle(data_train,targets_train)
-
-
-	train_model(data_tr,targets_tr,train_split)
+	train_model(X_train,y_train)
+	acc_n,acc_cr = test_model(X_test,y_test)
+	aucs_n.append(acc_n)
+	aucs_cruz.append(acc_cr)
 	
 
-result = test_model(data_test,targets_test,train_split)
-aucs.append(result)
+# result = test_model(data_test,targets_test)
+# aucs.append(result)
 
-aucs_med = list(map(sum, zip(result)))
+# aucs_med = list(map(sum, zip(result)))
 
 now = datetime.datetime.now()
 
@@ -268,8 +269,14 @@ with open("report",'a') as outfile:
 	outfile.write("\nBATCH_SIZE "+str(BATCH_SIZE))
 	outfile.write("\nEPOCHS  "+str(EPOCHS))
 
-	outfile.write("\nauc_n media  "+str(aucs_med[0]))
-	outfile.write("\nauc_cruz media  "+str(aucs_med[1]))
+	outfile.write("\nauc_n  "+",".join([str(i) for i in aucs_n]))
+	outfile.write("\nauc_cruz  "+",".join([str(i) for i in aucs_cruz]))
+
+	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/len(aucs_n)))
+	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/len(aucs_cruz)))
+	outfile.write("\n\n\t------------OBS------------")
+
+	outfile.write("\n"+obs+"\n\n")
 # plt.plot(r.history['loss'],label = 'loss')
 # plt.plot(r.history['val_acc'],label = 'val_acc')
 # plt.legend()
