@@ -16,6 +16,9 @@ from keras.models import Model
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import KFold
 
+from sklearn.utils.class_weight import compute_class_weight, compute_sample_weight
+
+
 import datetime
 #pessoas não sabem acentuar palavras: remover acentos
 CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
@@ -33,7 +36,7 @@ VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
 EPOCHS = 20
-obs = "10 fold cross validation"
+obs = "10 fold cross validation, categorical_crossentropy"
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
@@ -118,6 +121,7 @@ def read_file(dbFile):
 
 
 sentences,targets = read_file(dbFile)
+print("Positivos ",targets[:,0].sum(),"\nNeutros ",targets[:,1].sum(),"\nNegativos ",targets[:,2].sum())
 print(len(sentences), " sentences were found")
 word2vec= loadWE()
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
@@ -142,6 +146,11 @@ print('Found %s unique tokens.' % len(word2idx))
 data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH)
 print('Shape of data tensor: ',data.shape)
 
+y_ints = [y.argmax() for y in targets]
+print(y_ints)
+# print(np.unique(y_ints))
+class_weights = compute_class_weight('balanced', np.unique(y_ints), y_ints)
+print(class_weights)
 
 #prepare embedding matrix
 
@@ -185,6 +194,7 @@ output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 model = Model(input_,output)
 model.compile(
     loss ='binary_crossentropy',
+    # loss = 'categorical_crossentropy',
     optimizer = Adam(lr = 0.01),
     metrics = ['accuracy']
 )
@@ -202,7 +212,8 @@ def train_model(data,targets):
 	    targets,
 	    batch_size = BATCH_SIZE,
 	    epochs = EPOCHS,
-	    validation_split = VALIDATION_SPLIT
+	    validation_split = VALIDATION_SPLIT,
+	    class_weight = class_weights
 	    )
 
 
