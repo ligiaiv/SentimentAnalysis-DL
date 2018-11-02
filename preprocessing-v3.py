@@ -242,22 +242,27 @@ def test_model(data,targets):
 	auc_cruz = (result*posneg_position).sum()/total_posneg
 	print('auc_cruz = ',auc_cruz )
 
-	return auc_n,auc_cruz
+	conf_matrix = np.matmul(targets.transpose(),p_bool)
+
+
+	return conf_matrix,auc_n,auc_cruz
 
 
 aucs_n= []
 aucs_cruz = []
 kf = KFold(n_splits=10)
 
+index = 0
 for train_index, test_index in kf.split(data):
 	print("TRAIN:", train_index, "TEST:", test_index)
 	X_train, X_test = data[train_index], data[test_index]
 	y_train, y_test = targets[train_index], targets[test_index]
 
 	train_model(X_train,y_train)
-	acc_n,acc_cr = test_model(X_test,y_test)
+	confusion_matrix,acc_n,acc_cr = test_model(X_test,y_test)
 	aucs_n.append(acc_n)
 	aucs_cruz.append(acc_cr)
+
 	
 
 # result = test_model(data_test,targets_test)
@@ -285,6 +290,8 @@ with open("report",'a') as outfile:
 
 	outfile.write("\nauc_n media  "+str(np.array(aucs_n).sum()/len(aucs_n)))
 	outfile.write("\nauc_cruz media  "+str(np.array(aucs_cruz).sum()/len(aucs_cruz)))
+	outfile.write("\n\n\tConfusion Matrix")
+	outfile.write("\n\t"+np.array2string(confusion_matrix, precision=2, separator=',',suppress_small=True))
 	outfile.write("\n\n\t------------OBS------------")
 
 	outfile.write("\n"+obs+"\n\n")
