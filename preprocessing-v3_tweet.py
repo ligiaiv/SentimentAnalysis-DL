@@ -22,7 +22,7 @@ from sklearn.utils.class_weight import compute_class_weight, compute_sample_weig
 import datetime
 #pessoas não sabem acentuar palavras: remover acentos
 CHARS_TO_REMOVE = [',',';',':','"',"'",'\n','\t','.','!','?',""]
-BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(',')','u_u','o_o','c/']
+BAD_STRINGS = ['rt','http','html',':)',':(','¬¬','=p','www','=d','p/','*-*',':d','^^','(',')','u_u','o_o','c/']
 # chars_to_detect = ['.','!','?',]
 stemmer = nltk.stem.RSLPStemmer()
 
@@ -77,7 +77,20 @@ def read_file(dbFile):
 	print('Reading Dataset...')
 	i=0
 	# dbdf = open(dbFile,'r')
-	dbdf = pd.read_csv(dbFile)
+	dbdf = pd.read_csv(dbFile,sep = '|')
+	targets = dbdf.ix[:,1]
+	frases = dbdf.ix[:,0]
+	targets = targets*(-1)+1
+	targets = np.eye(3)[targets]
+	print(targets)
+
+
+
+	# print(frases)
+
+
+
+
 	# for line in dbdf:
 	# 	print(line)
 	# 	parts = line.split('|')
@@ -94,57 +107,13 @@ def read_file(dbFile):
 
 	# 	frase = [x = "" if word in STOPWORDS or word in CHARS_TO_REMOVE or bool(re.search(r'\d', word)) or any(substring in word for substring in BAD_STRINGS) else x = word for word in frase]#remove stopwords, ponctuation, numbers and bad strings
 	# 	print(frase)
-	dbdf[0].apply(lambda x: [word for word in x.split() if word_verify(word)])
-	print(dbdf)
-	exit()
-	f_in = open(dbFile,'r')
-
-	frase = []
-	targets = []
-	frase_list =[]
-	value = ""
-	next(f_in)
-	for line in f_in:
-		#i+=1
-		#print(i," ",line)
-
-		if not len(line.replace(' ',''))>1:
-			continue 
-		if line[0] is '#' or line[0] is '[':
-			# analyse_critica(critica)
-			# critica = ""
-			if len(frase)>0:
-				# print(value)
-				frase_list.append(frase)
-				if value is '+':
-					array = [1,0,0]
-				elif value is 'O':
-					array = [0,1,0]
-				elif value is '-':
-					array = [0,0,1]
-				else:
-					print("problemas com targets: ",value)
-					array = [0,0,0]
-				targets.append(array)
-				# print(targets)
-				# print(array)
-				
-				frase = []
-			continue
-
-		parts = line.split('\t')
-		word = parts[0].lower().replace('.','')
-
-
-		if word in STOPWORDS or word in CHARS_TO_REMOVE or bool(re.search(r'\d', word)) or any(substring in word for substring in BAD_STRINGS):#remove stopwords, ponctuation, numbers and bad strings
-			continue 
-		# word = stemmer.stem(word)
-		frase.append(word)
-		value = parts[4]
+	frase_list = frases.apply(lambda x: [word for word in x.split() if word_verify(word)])
+	
 	return frase_list,np.array(targets)
 
 
 sentences,targets = read_file(dbFile)
+print()
 print("Positivos ",targets[:,0].sum(),"\nNeutros ",targets[:,1].sum(),"\nNegativos ",targets[:,2].sum())
 print(len(sentences), " sentences were found")
 word2vec= loadWE()
@@ -276,18 +245,17 @@ aucs_n= []
 aucs_cruz = []
 kf = KFold(n_splits=10)
 
-index = 0
-confusion_matrix =np.array()
+# index = 0
+# confusion_matrix =np.array()
 for train_index, test_index in kf.split(data):
 	print("TRAIN:", train_index, "TEST:", test_index)
 	X_train, X_test = data[train_index], data[test_index]
 	y_train, y_test = targets[train_index], targets[test_index]
 
 	train_model(X_train,y_train)
-	cf,acc_n,acc_cr = test_model(X_test,y_test)
+	confusion_matrix,acc_n,acc_cr = test_model(X_test,y_test)
 	aucs_n.append(acc_n)
 	aucs_cruz.append(acc_cr)
-	confusion_matrix = cf
 
 	
 
@@ -299,7 +267,7 @@ for train_index, test_index in kf.split(data):
 now = datetime.datetime.now()
 
 
-with open("report",'a') as outfile:
+with open("report_tweet",'a') as outfile:
 	outfile.write("\n*************"+now.strftime("%Y-%m-%d %H:%M")+"*************")
 	outfile.write("\nEMBEDDING_DIM"+str(EMBEDDING_DIM))
 	outfile.write("\nMAX_VOCAB_SIZE "+str(MAX_VOCAB_SIZE))
