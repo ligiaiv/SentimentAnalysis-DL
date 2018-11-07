@@ -84,9 +84,10 @@ def read_file(dbFile):
 		#i+=1
 		#print(i," ",line)
 
-		if not len(line.replace(' ',''))>1:
+		if line[0] is '#' or "[features" in line:
 			continue 
-		if line[0] is '#' or line[0] is '[':
+
+		if not len(line.replace(' ',''))>1:
 			# analyse_critica(critica)
 			# critica = ""
 			if len(frase)>0:
@@ -121,8 +122,15 @@ def read_file(dbFile):
 
 
 sentences,targets = read_file(dbFile)
+with open("BigFiles/sentences.txt",'w') as sentences_out_file:
+	for sentence in sentences:
+		sentences_out_file.write(" ".join(sentence)+"\n")
+
 print("Positivos ",targets[:,0].sum(),"\nNeutros ",targets[:,1].sum(),"\nNegativos ",targets[:,2].sum())
 print(len(sentences), " sentences were found")
+
+
+
 word2vec= loadWE()
 tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
 tokenizer.fit_on_texts(sentences) #gives each word a number
