@@ -128,7 +128,6 @@ tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
 tokenizer.fit_on_texts(sentences) #gives each word a number
 sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
 
-
 ##################################################################################
 ##																				##
 ##																				##
