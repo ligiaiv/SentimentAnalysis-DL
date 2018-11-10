@@ -30,8 +30,10 @@ possible_labels = np.array(["+","O","-"])
 dbFile = "BigFiles/ReLi-Completo.txt"
 EMBEDDING_DIM = 100
 MAX_VOCAB_SIZE = 30000
+
 MAX_SEQUENCE_LENGTH = 100
 
+embedding_matrix = np.array([[]])
 
 hparams = {'max_document_length': MAX_SEQUENCE_LENGTH,
            'embedding_size': EMBEDDING_DIM,
@@ -40,6 +42,10 @@ hparams = {'max_document_length': MAX_SEQUENCE_LENGTH,
            'attention_size': 32,
            'attention_depth': 2}
 
+
+MAX_LABEL = 3
+WORDS_FEATURE = 'words'
+NUM_STEPS = 300
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -58,7 +64,7 @@ def loadWE():
 			len_word = (len(values)-(EMBEDDING_DIM))
 
 			word = ' '.join(values[0:(len(values)-(EMBEDDING_DIM))])
-			vec = np.asarray(values[len_word:],dtype = 'float32')
+			vec = np.asarray(values[len_word:],dtype = 'float64')
 			word2vec[word] = vec
 
 	print('Found %s word vectors.' % len(word2vec))
@@ -134,12 +140,13 @@ def read_file_Skoob(dbFile):
 
 
 def embed(features):
-    word_vectors = tf.contrib.layers.embed_sequence(
-        features[WORDS_FEATURE], 
-        vocab_size=n_words, 
-        embed_dim=hparams['embedding_size'])
+    # word_vectors = tf.contrib.layers.embed_sequence(
+    #     features[WORDS_FEATURE], 
+    #     vocab_size=n_words, 
+    #     embed_dim=hparams['embedding_size'])
     
-    return word_vectors
+	word_vectors = tf.nn.embedding_lookup(embedding_matrix,features)
+	return word_vectors
 
 def encode(word_vectors):
     # Create a Gated Recurrent Unit cell with hidden size of RNN_SIZE.
@@ -152,7 +159,7 @@ def encode(word_vectors):
     outputs, _ = tf.nn.bidirectional_dynamic_rnn(rnn_fw_cell, 
                                                  rnn_bw_cell, 
                                                  word_vectors, 
-                                                 dtype=tf.float32, 
+                                                 dtype=tf.float64, 
                                                  time_major=False)
     
     return outputs
@@ -171,7 +178,7 @@ def attend(inputs, attention_size, attention_depth):
     x = tf.layers.dense(x, attention_size, activation = tf.nn.relu)
   x = tf.layers.dense(x, 1, activation = None)
   logits = tf.reshape(x, [-1, sequence_length, 1])
-  alphas = tf.nn.softmax(logits, dim = 1)
+  alphas = tf.nn.softmax(logits, axis = 1)
   
   output = tf.reduce_sum(inputs * alphas, 1)
 
@@ -221,7 +228,7 @@ def predict(encoding, labels, mode, alphas):
 def bi_rnn_model(features, labels, mode):
   """RNN model to predict from sequence of words to a class."""
 
-  word_vectors = embed(features)
+  word_vectors = embed(features[WORDS_FEATURE])
   outputs = encode(word_vectors)
   encoding, alphas = attend(outputs, 
                             hparams['attention_size'], 
@@ -229,35 +236,149 @@ def bi_rnn_model(features, labels, mode):
 
   return predict(encoding, labels, mode, alphas)
 
+
+def process_inputs(dbFile):
     
 
-sentences,targets = read_file_Skoob(dbFile)
-with open("BigFiles/sentences2.txt",'w') as fout:
-	fout.write('\n'.join([' '.join(x) for x in sentences]))
+	sentences,targets = read_file_Skoob(dbFile)
+	with open("BigFiles/sentences2.txt",'w') as fout:
+		fout.write('\n'.join([' '.join(x) for x in sentences]))
 
-print("Positivos ",(targets==0).sum(),"\nNeutros ",(targets==1).sum(),"\nNegativos ",(targets==2).sum())
-print(len(sentences), " sentences were found")
-
-
-print(targets)
+	print("Positivos ",(targets==0).sum(),"\nNeutros ",(targets==1).sum(),"\nNegativos ",(targets==2).sum())
+	print(len(sentences), " sentences were found")
 
 
-word2vec= loadWE()
-tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
-tokenizer.fit_on_texts(sentences) #gives each word a number
-sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
+	print(targets)
 
-# OFFICIAL_MAX = max([len(x) for x in sequences])
-# print('OFFICIAL_MAX ',OFFICIAL_MAX)
-# # print([len(x) for x in sequences])
-# seq1 = [x for x in sequences if len(x)==1]
-# print(seq1)
-# sns.distplot([len(x) for x in sequences],kde=False);
-# plt.show()
 
-word2idx = tokenizer.word_index
-print('Found %s unique tokens.' % len(word2idx))
-data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH,padding = 'post')
-print('Shape of data tensor: ',data.shape)
+	tokenizer = Tokenizer(num_words=MAX_VOCAB_SIZE)
+	tokenizer.fit_on_texts(sentences) #gives each word a number
+	sequences = tokenizer.texts_to_sequences(sentences) #replaces each word with its index
 
-print(data)
+	# OFFICIAL_MAX = max([len(x) for x in sequences])
+	# print('OFFICIAL_MAX ',OFFICIAL_MAX)
+	# # print([len(x) for x in sequences])
+	# seq1 = [x for x in sequences if len(x)==1]
+	# print(seq1)
+	# sns.distplot([len(x) for x in sequences],kde=False);
+	# plt.show()
+
+	word2idx = tokenizer.word_index
+	print('Found %s unique tokens.' % len(word2idx))
+	VOCAB_SIZE = min(MAX_VOCAB_SIZE,len(word2idx)+1)
+
+	data = pad_sequences(sequences,maxlen = MAX_SEQUENCE_LENGTH,padding = 'post')
+	print('Shape of data tensor: ',data.shape)
+
+	print(data)
+
+
+
+	word2vec= loadWE()
+
+
+	print('Filling pre-trained embeddings...')
+	words_not_found = []
+
+	VOCAB_SIZE = min(MAX_VOCAB_SIZE,len(word2idx)+1)
+	embedding_matrix = np.zeros((VOCAB_SIZE,EMBEDDING_DIM))
+	for word,i in word2idx.items():
+		if i<MAX_VOCAB_SIZE:
+			embedding_vector = word2vec.get(word)
+			if embedding_vector is not None:
+				embedding_matrix[i] = embedding_vector
+			else:
+				words_not_found.append(word)
+	print("total de palavras: ",len(word2idx),"\tpalavras não encontradasno embedding: ",len(words_not_found))
+	with open("BigFiles/words_not_in_emb.txt",'w') as fout:
+		fout.write('\n'.join(words_not_found))
+
+
+
+	n_words = len(word2idx)
+	print('Total words: %d' % n_words)
+
+
+
+
+
+    # Return the transformed data and the number of words
+	return data, targets, n_words
+
+
+
+
+# Train.
+def train_model(x_train,y_train):
+	train_input_fn = tf.estimator.inputs.numpy_input_fn(
+	  x={WORDS_FEATURE: x_train},
+	  y=y_train,
+	  batch_size=hparams['batch_size'],
+	  num_epochs=None,
+	  shuffle=True)
+
+
+	classifier.train(input_fn=train_input_fn, 
+	                 steps=NUM_STEPS)
+
+# Predict.
+
+def test_model(x_test,y_test):
+	test_input_fn = tf.estimator.inputs.numpy_input_fn(
+	  x={WORDS_FEATURE: x_test},
+	  y=y_test,
+	  num_epochs=1,
+	  shuffle=False)
+
+	
+	scores = classifier.evaluate(input_fn=test_input_fn)
+	print('Accuracy: {0:f}'.format(scores['accuracy']))
+	print('AUC: {0:f}'.format(scores['auc']))
+	# predictions = classifier.predict(input_fn=test_input_fn)
+	
+
+	# return predictions
+
+
+# aucs_n= []
+# aucs_cruz = []
+
+data,targets,n_words = process_inputs(dbFile)
+current_time = str(int(time.time()))
+
+
+
+model_dir = os.path.join('checkpoints', current_time)
+
+
+
+
+
+
+
+
+
+classifier = tf.estimator.Estimator(model_fn=bi_rnn_model, 
+                                    model_dir=model_dir)
+
+kf = KFold(n_splits=10)
+
+index = 0
+for train_index, test_index in kf.split(data):
+	print("TRAIN:", train_index, "TEST:", test_index)
+	X_train, X_test = data[train_index], data[test_index]
+	y_train, y_test = targets[train_index], targets[test_index]
+
+	train_model(X_train,y_train)
+	# confusion_matrix,acc_n,acc_cr = test_model(X_test,y_test)
+	test_model(X_test,y_test)
+	# aucs_n.append(acc_n)
+	# aucs_cruz.append(acc_cr)
+
+	
+
+# y_predicted = []
+# alphas_predicted = []
+# for p in predictions:
+#     y_predicted.append(p['class'])
+#     alphas_predicted.append(p['attention'])
