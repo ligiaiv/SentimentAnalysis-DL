@@ -155,9 +155,10 @@ print('Shape of data tensor: ',data.shape)
 y_ints = [y.argmax() for y in targets]
 # print(y_ints)
 # print(np.unique(y_ints))
-class_weights = compute_class_weight('balanced', np.unique(y_ints), y_ints)
+# class_weights = compute_class_weight('balanced', np.unique(y_ints), y_ints)
 
-# class_weights = targets.sum(axis = 0)/targets.sum()
+class_weights = targets.sum(axis = 0)/targets.sum()
+class_weights = {0: class_weights[0],1: class_weights[1],2: class_weights[2]}
 # print(class_weights)
 #prepare embedding matrix
 
