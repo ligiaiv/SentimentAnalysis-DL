@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.layers import Dense, Input, Embedding
-from keras.layers import LSTM, Bidirectional,GlobalMaxPool1D, Dropout
+from keras.layers import LSTM, Bidirectional,GlobalMaxPool1D, Dropout, GRU
 from keras.optimizers import Adam
 from keras.models import Model
 from keras.utils import to_categorical
@@ -29,17 +29,17 @@ BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 100
+EMBEDDING_DIM = 600
 MAX_VOCAB_SIZE = 30000
-M = 10 #nº de camadas
+M = 20 #nº de camadas
 possible_labels = np.array(["+","O","-"])
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
 EPOCHS = 20
-USE_CLASS_WEIGHTS = True
-obs = "10 fold cross validation, categorical_crossentropy, attention, phrases instead of reviews"
+USE_CLASS_WEIGHTS = False
+obs = "10 fold cross validation, categorical_crossentropy, attention, phrases instead of reviews, LSTM"
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
