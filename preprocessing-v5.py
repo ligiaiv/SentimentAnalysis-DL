@@ -29,15 +29,15 @@ BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 600
+EMBEDDING_DIM = 1000
 MAX_VOCAB_SIZE = 30000
-M = 20 #nº de camadas
+M = 10 #nº de camadas
 possible_labels = np.array(["+","O","-"])
 MAX_SEQUENCE_LENGTH = 100
 VALIDATION_SPLIT = 0.2
 TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
-EPOCHS = 20
+EPOCHS = 30
 USE_CLASS_WEIGHTS = False
 obs = "10 fold cross validation, categorical_crossentropy, attention, phrases instead of reviews, LSTM"
 
