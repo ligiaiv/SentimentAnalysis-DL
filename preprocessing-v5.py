@@ -39,7 +39,7 @@ TRAIN_TEST_SPLIT = 0.7
 BATCH_SIZE = 128
 EPOCHS = 30
 USE_CLASS_WEIGHTS = False
-obs = "10 fold cross validation, categorical_crossentropy, attention, phrases instead of reviews, LSTM"
+obs = "10 fold cross validation, categorical_crossentropy, no attention, phrases instead of reviews, LSTM"
 
 def rand_shuffle(data,targets):
 	# print(target.shape)
@@ -197,11 +197,11 @@ input_ = Input(shape = (MAX_SEQUENCE_LENGTH,))
 x = embedding_layer(input_)
 x = Bidirectional(LSTM(M,return_sequences = True))(x)
 
-attention_probs = Dense(MAX_SEQUENCE_LENGTH, activation='softmax', name='attention_probs')(x)
-attention_mul = concatenate([x, attention_probs])
+# attention_probs = Dense(MAX_SEQUENCE_LENGTH, activation='softmax', name='attention_probs')(x)
+# attention_mul = concatenate([x, attention_probs])
 # attention_mul = layers.merge([x, attention_probs], output_shape=32, name='attention_mul', mode='mul')
 # attention_mul = Flatten()(attention_mul)
-x = GlobalMaxPool1D()(attention_mul)
+x = GlobalMaxPool1D()(x)
 output = Dense(len(possible_labels),activation = 'sigmoid')(x)
 
 model = Model(input_,output)
