@@ -1,5 +1,5 @@
 BigFiles/
 __pycache__/
 checkpoints/
-model.h5
+model.*
 

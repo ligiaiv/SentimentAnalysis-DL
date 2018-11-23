@@ -664,5 +664,31 @@ auc_cruz media  0.4915421128759533
 	USE_CLASS_WEIGHTS = False
 
 	------------OBS------------
-10 fold cross validation, categorical_crossentropy, no attention, phrases instead of reviews, LSTM 2 layers
+10 fold cross validation, categorical_crossentropy, no attention, phrases instead of reviews, LSTM 5 layers
+
+
+*************2018-11-22 23:42*************
+EMBEDDING_DIM600
+MAX_VOCAB_SIZE 30000
+M 10
+possible_labels +,O,-
+MAX_SEQUENCE_LENGTH 100
+VALIDATION_SPLIT 0.2
+TRAIN_TEST_SPLIT 0.7
+BATCH_SIZE 128
+EPOCHS  30
+auc_n  0.8187755102040817,0.773061224489796,0.7640816326530612,0.7281632653061224,0.7991836734693878,0.7763265306122449,0.7657142857142857,0.7346938775510204,0.7516339869281046,0.7238562091503268
+auc_cruz  0.5205479452054794,0.49698795180722893,0.37358490566037733,0.43908045977011495,0.4036363636363636,0.45857988165680474,0.5714285714285714,0.46607669616519176,0.4609164420485175,0.4376417233560091
+auc_n media  0.7635490196078432
+auc_cruz media  0.4628480940734659
+
+	Confusion Matrix
+	[[184.,193., 16.],
+ [ 78.,693., 12.],
+ [ 10., 29.,  9.]]
+
+	USE_CLASS_WEIGHTS = False
+
+	------------OBS------------
+10 fold cross validation, categorical_crossentropy, attention, phrases instead of reviews, LSTM
 

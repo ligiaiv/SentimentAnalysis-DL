@@ -29,7 +29,7 @@ BAD_STRINGS = ['http','html',':)','¬¬','=p','www','=d','p/','*-*',':d','^^','(
 stemmer = nltk.stem.RSLPStemmer()
 
 dbFile = "BigFiles/ReLi-Completo.txt"
-EMBEDDING_DIM = 1000
+EMBEDDING_DIM = 600
 MAX_VOCAB_SIZE = 30000
 M = 10 #nº de camadas
 possible_labels = np.array(["+","O","-"])
